@@ -1,7 +1,6 @@
 const { find, create} = require("./mongoService");
 const justry = require("express")();
 const bodyParser = require('body-parser');
-const PORT = 3030;
 var cors = require('cors');
 const jsonParser = bodyParser.json()
 
@@ -68,5 +67,5 @@ justry.post("/newuser", jsonParser, (req, res) => {
 });
 
 
-justry.listen(PORT);
+justry.listen(process.env.PORT || 5000);
 
