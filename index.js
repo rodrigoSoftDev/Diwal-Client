@@ -2,49 +2,61 @@ const { find, create} = require("./mongoService");
 const justry = require("express")();
 const bodyParser = require('body-parser');
 var cors = require('cors');
+const { v4: uuidv4 } = require('uuid');
 const jsonParser = bodyParser.json()
 
 justry.use(cors());
 justry.set('Content-Type', 'text/plain');
 
-const onSucces = (svResponse, dbResponse) => {
+const onSucces = (svResponse, dbResponse, data) => {
     svResponse.status(200)
-    svResponse.json(dbResponse);
+    svResponse.json({
+        response: dbResponse,
+        data: data,
+    });
 };
 
 const ondbError = (svResponse, error) => {
     svResponse.status(400)
-    svResponse.json(error);
+    svResponse.json({ 
+        response: error,
+    });
 };
 
 justry.post("/login", jsonParser , (req, res) => 
-    find("userlogin", "username" , req.body.username).then(
+    find("users", "username" , req.body.username).then(
         user => {
-            if (user && req.body.password === user.password) onSucces(res, {
-                response: "Login successfully",
-                data: { 
-                    id: user.id,
-                }
-            });
-            else ondbError(res, { 
-                response: "Login error",
-            })
+            const data = user && { id: user.id }
+            if (user && req.body.password === user.password) onSucces(res, "Login successfully", data);
+            else ondbError(res, "Login error");
         },
-        err => ondbError(res, { 
-            response: err,
-        })
+        err => ondbError(res, err)
     )
 );
 
 justry.post("/register", jsonParser , (req, res) => 
-    find("userlogin", "username" , req.body.username).then(
+    find("users", "username" , req.body.username).then(
         user => {
-            if (user) ondbError(res, "Ya existe el usuario especificado" )
-            else create("userlogin", {
-                    username: req.body.username,
-                    password: req.body.password
-                }).then(
-                    newUser => onSucces(res, "Usuario creado exitosamnete"),
+            const userToCreate = { 
+                username: req.body.username,
+                password: req.body.password,
+                id: uuidv4(),
+                info: {
+                    totalMoney: 0,
+                    cash: 0,
+                    investments: 0,
+                    dolars: 0,
+                    bankAccount: 0,
+                    expendedMoney: 0,
+                    leisure: 0,
+                    things: 0,
+                    friends: 0,
+                    fee: 0,
+                }
+             }
+            if (user) ondbError(res, "Ya existe el usuario especificado")
+            else create("users", userToCreate).then(
+                    () => onSucces(res, "Usuario creado exitosamnete", null),
                     err => ondbError(res, err)
                 )
         },
@@ -54,18 +66,15 @@ justry.post("/register", jsonParser , (req, res) =>
 
 justry.get("/user/:id", (req, res) => 
     find("users", "id", req.params.id).then(
-        user => onSucces(res, user),
+        user => {
+            if (user) onSucces(res, "User founded", user)
+            else ondbError(res, "user not founded")
+        },
         err => ondbError(res, err)
     )
 );
 
-justry.post("/newuser", jsonParser, (req, res) => {
-    create("users", req.body).then(
-        newUser => onSucces(res, {response: "User created successfully"}),
-        err => ondbError(res, err)
-    )
-});
 
 
-justry.listen(process.env.PORT || 5000);
+justry.listen(process.env.PORT || 3030);
 
